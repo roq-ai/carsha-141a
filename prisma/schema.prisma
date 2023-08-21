@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["clientExtensions", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions      = [pgcrypto]
+}
+
+model organization {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  description String?  @db.VarChar(255)
+  name        String   @db.VarChar(255)
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+  updated_at  DateTime @default(now()) @db.Timestamp(6)
+  user_id     String   @db.Uuid
+  tenant_id   String   @db.VarChar(255)
+  user        user     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model performance {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vehicle_id  String   @db.Uuid
+  date        DateTime @db.Date
+  usage_rate  Int
+  demand_rate Int
+  analyst_id  String   @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+  updated_at  DateTime @default(now()) @db.Timestamp(6)
+  user        user     @relation(fields: [analyst_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  vehicle     vehicle  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model reservation {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  start_date DateTime @db.Date
+  end_date   DateTime @db.Date
+  user_id    String   @db.Uuid
+  vehicle_id String   @db.Uuid
+  status     String   @db.VarChar(255)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @db.Timestamp(6)
+  user       user     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  vehicle    vehicle  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model usage {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vehicle_id   String   @db.Uuid
+  date         DateTime @db.Date
+  hours_used   Int
+  miles_driven Int
+  user_id      String   @db.Uuid
+  created_at   DateTime @default(now()) @db.Timestamp(6)
+  updated_at   DateTime @default(now()) @db.Timestamp(6)
+  user         user     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  vehicle      vehicle  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model user {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String         @unique @db.VarChar(255)
+  firstName    String?        @db.VarChar(255)
+  lastName     String?        @db.VarChar(255)
+  roq_user_id  String         @db.VarChar(255)
+  tenant_id    String         @db.VarChar(255)
+  created_at   DateTime       @default(now()) @db.Timestamp(6)
+  updated_at   DateTime       @default(now()) @db.Timestamp(6)
+  organization organization[]
+  performance  performance[]
+  reservation  reservation[]
+  usage        usage[]
+  vehicle      vehicle[]
+}
+
+model vehicle {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  make        String        @db.VarChar(255)
+  model       String        @db.VarChar(255)
+  year        Int
+  color       String        @db.VarChar(255)
+  mileage     Int
+  owner_id    String        @db.Uuid
+  created_at  DateTime      @default(now()) @db.Timestamp(6)
+  updated_at  DateTime      @default(now()) @db.Timestamp(6)
+  performance performance[]
+  reservation reservation[]
+  usage       usage[]
+  user        user          @relation(fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
